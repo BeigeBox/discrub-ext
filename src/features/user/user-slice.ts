@@ -1,5 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { sendChromeMessage } from "../../services/chrome-service";
+import {
+  getClientHeadersAsync,
+  sendChromeMessage,
+} from "../../services/chrome-service";
 import { UserState } from "./user-types";
 import { AppThunk } from "../../app/store";
 import { User } from "../../classes/user";
@@ -44,6 +47,18 @@ export const userSlice = createSlice({
 
 export const { setIsLoading, setToken, setCurrentUser, setClientHeaders } =
   userSlice.actions;
+
+/**
+ * Re-fetch Discord client headers from the content script and update Redux.
+ * Called periodically so that long-running operations always use a fresh
+ * X-Super-Properties / build number instead of a stale snapshot.
+ */
+export const refreshClientHeaders = (): AppThunk => async (dispatch) => {
+  const headers = await getClientHeadersAsync();
+  if (headers && Object.keys(headers).length > 0) {
+    dispatch(setClientHeaders(headers));
+  }
+};
 
 export const getUserData = (): AppThunk => async (dispatch, getState) => {
   const { settings } = getState().app;

@@ -10,9 +10,20 @@ import { Delay } from "../enum/delay.ts";
 import { DateFormat } from "../enum/date-format.ts";
 import { TimeFormat } from "../enum/time-format.ts";
 import { BrowserEnvironment } from "../enum/browser-environment.ts";
+import { DiscordClientHeaders } from "../types/discord-client-headers.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ChromeCallback = (param: any) => Promise<void> | void | Maybe;
+
+export const getClientHeadersAsync = (): Promise<DiscordClientHeaders> =>
+  new Promise((resolve) => {
+    sendChromeMessage(
+      "GET_CLIENT_HEADERS",
+      (headers: DiscordClientHeaders | null) => {
+        resolve(headers ?? {});
+      },
+    );
+  });
 
 export const sendChromeMessage = (msg: string, callback?: ChromeCallback) => {
   chrome &&
