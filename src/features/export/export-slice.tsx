@@ -220,6 +220,7 @@ const _downloadFilesFromMessage =
   }: FilesFromMessagesProps): AppThunk<Promise<void>> =>
   async (dispatch, getState) => {
     const { settings } = getState().app;
+    const { clientHeaders } = getState().user;
     const { threads } = getState().thread;
     const {
       exportUseArtistMode,
@@ -276,7 +277,7 @@ const _downloadFilesFromMessage =
             const status = `Downloading - ${downloadUrl}`;
             dispatch(setStatus(status));
             const { success, data } = await new DiscordService(
-              settings,
+              settings, clientHeaders,
             ).downloadFile(downloadUrl);
             if (success && data) {
               const { ext: fileExtension } = (await fileTypeFromBlob(data)) || {
@@ -312,13 +313,14 @@ const _downloadRoles =
     const guildRoles = guild.roles || [];
     for (const [_, role] of guildRoles.entries()) {
       const { settings } = getState().app;
+      const { clientHeaders } = getState().user;
       if (await dispatch(isAppStopped())) break;
 
       const { exportMaps } = getState().export;
       const iconUrl = resolveRoleUrl(role.id, role.icon).remote;
       if (iconUrl) {
         const { success, data } = await new DiscordService(
-          settings,
+          settings, clientHeaders,
         ).downloadFile(iconUrl);
         if (success && data) {
           const fileExt = data.type.split("/")?.[1] || "webp";
@@ -340,6 +342,7 @@ const _downloadAvatarFromMessage =
   ({ message, exportUtils }: AvatarFromMessageProps): AppThunk<Promise<void>> =>
   async (dispatch, getState) => {
     const { settings } = getState().app;
+    const { clientHeaders } = getState().user;
     const { reactionsEnabled } = settings;
     const { exportMaps } = getState().export;
     const { reactionMap, userMap } = exportMaps;
@@ -374,7 +377,7 @@ const _downloadAvatarFromMessage =
         const status = `Downloading - ${remoteAvatar}`;
         dispatch(setStatus(status));
         const { success, data } = await new DiscordService(
-          settings,
+          settings, clientHeaders,
         ).downloadFile(remoteAvatar);
         if (success && data) {
           const fileExt = data.type.split("/")?.[1] || "webp";
@@ -763,6 +766,7 @@ const _downloadEmojisFromMessage =
       getSpecialFormatting(message.content),
     );
     const { settings } = getState().app;
+    const { clientHeaders } = getState().user;
     const reactionsEnabled = stringToBool(settings.reactionsEnabled);
     if (message.reactions && reactionsEnabled) {
       message.reactions.forEach((r) => {
@@ -780,7 +784,7 @@ const _downloadEmojisFromMessage =
           const status = `Downloading - ${downloadUrl}`;
           dispatch(setStatus(status));
           const { success, data } = await new DiscordService(
-            settings,
+            settings, clientHeaders,
           ).downloadFile(downloadUrl);
 
           if (success && data) {

@@ -53,11 +53,11 @@ export const getChannels =
   (guildId: Snowflake): AppThunk =>
   async (dispatch, getState) => {
     const { settings } = getState().app;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     if (guildId && token) {
       dispatch(setIsLoading(true));
       const { success, data } = await new DiscordService(
-        settings,
+        settings, clientHeaders,
       ).fetchChannels(token, guildId);
       if (success && data) {
         dispatch(
@@ -91,11 +91,11 @@ export const loadChannel =
   async (dispatch, getState) => {
     const { settings } = getState().app;
     const { selectedGuild } = getState().guild;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     const { channels } = getState().channel;
 
     if (token && channelId && !channels.map((c) => c.id).includes(channelId)) {
-      const { data, success } = await new DiscordService(settings).fetchChannel(
+      const { data, success } = await new DiscordService(settings, clientHeaders).fetchChannel(
         token,
         channelId,
       );

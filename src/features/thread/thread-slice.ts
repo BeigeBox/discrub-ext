@@ -33,16 +33,16 @@ export const getArchivedThreads =
     knownThreads,
   }: ArchivedThreadProps): AppThunk<Promise<Channel[]>> =>
   async (dispatch, getState) => {
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     const { discrubCancelled, settings } = getState().app;
 
     if (!discrubCancelled && token) {
       const threadArr: Channel[] = [];
 
       const { success: publicSuccess, data: publicData } =
-        await new DiscordService(settings).fetchPublicThreads(token, channelId);
+        await new DiscordService(settings, clientHeaders).fetchPublicThreads(token, channelId);
       const { success: privateSuccess, data: privateData } =
-        await new DiscordService(settings).fetchPrivateThreads(
+        await new DiscordService(settings, clientHeaders).fetchPrivateThreads(
           token,
           channelId,
         );
@@ -72,10 +72,10 @@ export const getArchivedThreads =
 export const unarchiveThread =
   (threadId: Snowflake): AppThunk<Promise<Channel | Maybe>> =>
   async (dispatch, getState) => {
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     const { settings } = getState().app;
     if (threadId && token) {
-      const { success, data } = await new DiscordService(settings).editChannel(
+      const { success, data } = await new DiscordService(settings, clientHeaders).editChannel(
         token,
         threadId,
         {

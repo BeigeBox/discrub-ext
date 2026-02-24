@@ -11,7 +11,8 @@ import { DateFormat } from "../enum/date-format.ts";
 import { TimeFormat } from "../enum/time-format.ts";
 import { BrowserEnvironment } from "../enum/browser-environment.ts";
 
-type ChromeCallback = (param: string) => Promise<void> | void | Maybe;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ChromeCallback = (param: any) => Promise<void> | void | Maybe;
 
 export const sendChromeMessage = (msg: string, callback?: ChromeCallback) => {
   chrome &&

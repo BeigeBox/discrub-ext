@@ -60,11 +60,11 @@ export const { setIsLoading, setDms, resetDm, setSelectedDms } =
 
 export const getDms = (): AppThunk => async (dispatch, getState) => {
   const { settings } = getState().app;
-  const { token } = getState().user;
+  const { token, clientHeaders } = getState().user;
   if (token) {
     dispatch(setIsLoading(true));
     const { success, data } = await new DiscordService(
-      settings,
+      settings, clientHeaders,
     ).fetchDirectMessages(token);
     if (success && data) {
       dispatch(setDms(data));

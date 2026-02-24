@@ -524,12 +524,12 @@ export const deleteRawReaction =
   ): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     const { settings } = getState().app;
-    const { token, currentUser } = getState().user;
+    const { token, currentUser, clientHeaders } = getState().user;
     const { reactionMap } = getState().export.exportMaps;
     let success = false;
 
     if (token) {
-      ({ success } = await new DiscordService(settings).deleteReaction(
+      ({ success } = await new DiscordService(settings, clientHeaders).deleteReaction(
         token,
         channelId,
         messageId,
@@ -676,11 +676,11 @@ export const updateRawMessage =
   (message: Message): AppThunk<Promise<{ success: boolean; data: Message }>> =>
   async (_dispatch, getState) => {
     const { settings } = getState().app;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     let retObj = { success: false, data: message };
 
     if (token) {
-      const { success, data } = await new DiscordService(settings).editMessage(
+      const { success, data } = await new DiscordService(settings, clientHeaders).editMessage(
         token,
         message.id,
         {
@@ -789,10 +789,10 @@ export const deleteRawMessage =
   (message: Message): AppThunk<Promise<boolean>> =>
   async (_dispatch, getState) => {
     const { settings } = getState().app;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
 
     if (token) {
-      const { success } = await new DiscordService(settings).deleteMessage(
+      const { success } = await new DiscordService(settings, clientHeaders).deleteMessage(
         token,
         message.id,
         message.channel_id,
@@ -986,7 +986,7 @@ const _fetchReactingUserIds =
   async (dispatch, getState) => {
     const exportReactions: ExportReaction[] = [];
     const { settings } = getState().app;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
 
     for (const type of [ReactionType.NORMAL, ReactionType.BURST]) {
       let reachedEnd = false;
@@ -994,7 +994,7 @@ const _fetchReactingUserIds =
       while (!reachedEnd) {
         if ((await dispatch(isAppStopped())) || !token) break;
         const { success, data } = await new DiscordService(
-          settings,
+          settings, clientHeaders,
         ).getReactions(
           token,
           message.channel_id,
@@ -1205,7 +1205,7 @@ const _collectUserNames =
   async (dispatch, getState) => {
     const { settings } = getState().app;
     const { displayNameLookup, appUserDataRefreshRate } = settings;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     const { userMap: existingUserMap } = getState().export.exportMaps;
     const updateMap = { ...userMap };
 
@@ -1223,7 +1223,7 @@ const _collectUserNames =
         if (isMissingOrStale) {
           const status = `Retrieving alias data for ${userName || userId}`;
           dispatch(setStatus(status));
-          const { success, data } = await new DiscordService(settings).getUser(
+          const { success, data } = await new DiscordService(settings, clientHeaders).getUser(
             token,
             userId,
           );
@@ -1248,7 +1248,7 @@ const _collectUserGuildData =
   async (dispatch, getState) => {
     const { settings } = getState().app;
     const { serverNickNameLookup, appUserDataRefreshRate } = settings;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     const { userMap: existingUserMap } = getState().export.exportMaps;
     const updateMap = { ...userMap };
 
@@ -1270,7 +1270,7 @@ const _collectUserGuildData =
           const status = `Retrieving server data for ${userMapping.userName || userId}`;
           dispatch(setStatus(status));
           const { success, data } = await new DiscordService(
-            settings,
+            settings, clientHeaders,
           ).fetchGuildUser(guildId, userId, token);
 
           if (success && data) {
@@ -1309,7 +1309,7 @@ const _resolveMessageReactions =
   (messages: Message[]): AppThunk<Promise<Message[]>> =>
   async (dispatch, getState) => {
     const { settings } = getState().app;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     const trackMap: Record<Snowflake, Reaction[]> = {};
     let retArr: Message[] = [...messages];
 
@@ -1321,7 +1321,7 @@ const _resolveMessageReactions =
           const status = `Searching for reactions around message ${i + 1} of ${messages.length}`;
           dispatch(setStatus(status));
           const { success, data } = await new DiscordService(
-            settings,
+            settings, clientHeaders,
           ).fetchMessageData(
             token,
             message.id,
@@ -1417,7 +1417,7 @@ const _getSearchMessages =
   ): AppThunk<Promise<MessageData & SearchResultData>> =>
   async (dispatch, getState) => {
     const { settings } = getState().app;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     const { channels } = getState().channel;
     const { dms } = getState().dm;
     const combinedChannels = [...channels, ...dms];
@@ -1437,7 +1437,7 @@ const _getSearchMessages =
         if (await dispatch(isAppStopped())) break;
 
         const { success, data } = await new DiscordService(
-          settings,
+          settings, clientHeaders,
         ).fetchSearchMessageData(token, offset, channelId, guildId, criteria);
 
         if (success && data) {
@@ -1591,7 +1591,7 @@ const _getMessagesFromChannel =
   (channelId: Snowflake): AppThunk<Promise<Message[]>> =>
   async (dispatch, getState) => {
     const { settings } = getState().app;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     let lastId = "";
     let reachedEnd = false;
     let messages: Message[] = [];
@@ -1600,7 +1600,7 @@ const _getMessagesFromChannel =
       while (!reachedEnd) {
         if (await dispatch(isAppStopped())) break;
         const { success, data } = await new DiscordService(
-          settings,
+          settings, clientHeaders,
         ).fetchMessageData(token, lastId, channelId);
 
         if (success && data) {

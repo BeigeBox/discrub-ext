@@ -15,6 +15,7 @@ import { DefaultReactionObject } from "../types/default-reaction-object";
 import { ForumTagObject } from "../types/forum-tag-object";
 import { GuildMemberObject } from "../types/guild-member-object";
 import { OverwriteObject } from "../types/overwrite-object";
+import { DiscordClientHeaders } from "../types/discord-client-headers";
 import { wait } from "../utils";
 
 type GuildChannelModify = {
@@ -74,15 +75,45 @@ class DiscordService {
   DISCORD_USERS_ENDPOINT = `${this.DISCORD_API_URL}/users`;
   DISCORD_GUILDS_ENDPOINT = `${this.DISCORD_API_URL}/guilds`;
   DISCORD_CHANNELS_ENDPOINT = `${this.DISCORD_API_URL}/channels`;
-  userAgent =
-    "Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20121202 Firefox/17.0 Iceweasel/17.0.1";
+  clientHeaders: DiscordClientHeaders = {};
 
-  constructor(settings?: AppSettings) {
+  constructor(settings?: AppSettings, clientHeaders?: DiscordClientHeaders) {
     if (settings) {
       this.searchDelaySecs = Number(settings.searchDelay2);
       this.deleteDelaySecs = Number(settings.deleteDelay2);
       this.delayModifierSecs = Number(settings.delayModifier2);
     }
+    if (clientHeaders) {
+      this.clientHeaders = clientHeaders;
+    }
+  }
+
+  /**
+   * Build the headers object for a Discord API request.
+   * Includes the captured Discord client headers (X-Super-Properties, etc.)
+   * and lets the browser provide its own User-Agent naturally.
+   */
+  private buildHeaders(authorization: string): Record<string, string> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      authorization: authorization,
+    };
+
+    // Apply captured Discord client headers
+    if (this.clientHeaders["x-super-properties"]) {
+      headers["x-super-properties"] = this.clientHeaders["x-super-properties"];
+    }
+    if (this.clientHeaders["x-discord-locale"]) {
+      headers["x-discord-locale"] = this.clientHeaders["x-discord-locale"];
+    }
+    if (this.clientHeaders["x-discord-timezone"]) {
+      headers["x-discord-timezone"] = this.clientHeaders["x-discord-timezone"];
+    }
+    if (this.clientHeaders["x-debug-options"]) {
+      headers["x-debug-options"] = this.clientHeaders["x-debug-options"];
+    }
+
+    return headers;
   }
 
   generateSnowflake = (date: Date = new Date()): string =>
@@ -166,11 +197,7 @@ class DiscordService {
       this.withRetry<User>(() =>
         fetch(`${this.DISCORD_USERS_ENDPOINT}/${userId}`, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            authorization: authorization,
-            "user-agent": this.userAgent,
-          },
+          headers: this.buildHeaders(authorization),
         }),
       ),
     );
@@ -179,11 +206,7 @@ class DiscordService {
     this.withRetry<User>(() =>
       fetch(`${this.DISCORD_USERS_ENDPOINT}/@me`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: authorization,
-          "user-agent": this.userAgent,
-        },
+        headers: this.buildHeaders(authorization),
       }),
     );
 
@@ -192,11 +215,7 @@ class DiscordService {
       this.withRetry<GuildMemberObject>(() =>
         fetch(`${this.DISCORD_GUILDS_ENDPOINT}/${guildId}/members/${userId}`, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            authorization: authorization,
-            "user-agent": this.userAgent,
-          },
+          headers: this.buildHeaders(authorization),
         }),
       ),
     );
@@ -205,11 +224,7 @@ class DiscordService {
     this.withRetry<Channel[]>(() =>
       fetch(`${this.DISCORD_USERS_ENDPOINT}/@me/channels`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: authorization,
-          "user-agent": this.userAgent,
-        },
+        headers: this.buildHeaders(authorization),
       }),
     );
 
@@ -217,11 +232,7 @@ class DiscordService {
     this.withRetry<Guild[]>(() =>
       fetch(`${this.DISCORD_USERS_ENDPOINT}/@me/guilds`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: authorization,
-          "user-agent": this.userAgent,
-        },
+        headers: this.buildHeaders(authorization),
       }),
     );
 
@@ -229,11 +240,7 @@ class DiscordService {
     this.withRetry<Role[]>(() =>
       fetch(`${this.DISCORD_GUILDS_ENDPOINT}/${guildId}/roles`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: authorization,
-          "user-agent": this.userAgent,
-        },
+        headers: this.buildHeaders(authorization),
       }),
     );
 
@@ -241,11 +248,7 @@ class DiscordService {
     this.withRetry<Channel[]>(() =>
       fetch(`${this.DISCORD_GUILDS_ENDPOINT}/${guildId}/channels`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: authorization,
-          "user-agent": this.userAgent,
-        },
+        headers: this.buildHeaders(authorization),
       }),
     );
 
@@ -254,11 +257,7 @@ class DiscordService {
       this.withRetry<Channel>(() =>
         fetch(`${this.DISCORD_CHANNELS_ENDPOINT}/${channelId}`, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            authorization: authorization,
-            "user-agent": this.userAgent,
-          },
+          headers: this.buildHeaders(authorization),
         }),
       ),
     );
@@ -272,11 +271,7 @@ class DiscordService {
       this.withRetry<Channel>(() =>
         fetch(`${this.DISCORD_CHANNELS_ENDPOINT}/${channelId}`, {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            authorization: authorization,
-            "user-agent": this.userAgent,
-          },
+          headers: this.buildHeaders(authorization),
           body: JSON.stringify({ ...updateObj }),
         }),
       ),
@@ -294,11 +289,7 @@ class DiscordService {
           `${this.DISCORD_CHANNELS_ENDPOINT}/${channelId}/messages/${messageId}`,
           {
             method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              authorization: authorization,
-              "user-agent": this.userAgent,
-            },
+            headers: this.buildHeaders(authorization),
             body: JSON.stringify({ ...updateProps }),
           },
         ),
@@ -316,11 +307,7 @@ class DiscordService {
           `${this.DISCORD_CHANNELS_ENDPOINT}/${channelId}/messages/${messageId}`,
           {
             method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              authorization: authorization,
-              "user-agent": this.userAgent,
-            },
+            headers: this.buildHeaders(authorization),
           },
         ),
       ),
@@ -340,11 +327,7 @@ class DiscordService {
           }${lastId.length > 0 ? `&${queryParam}=${lastId}` : ""}`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              authorization: authorization,
-              "user-agent": this.userAgent,
-            },
+            headers: this.buildHeaders(authorization),
           },
         ),
       ),
@@ -449,11 +432,7 @@ class DiscordService {
       this.withRetry<SearchMessageResult>(() =>
         fetch(searchPath, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            authorization: authorization,
-            "user-agent": this.userAgent,
-          },
+          headers: this.buildHeaders(authorization),
         }),
       ),
     );
@@ -466,11 +445,7 @@ class DiscordService {
           `${this.DISCORD_CHANNELS_ENDPOINT}/${channelId}/threads/archived/private`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              authorization: authorization,
-              "user-agent": this.userAgent,
-            },
+            headers: this.buildHeaders(authorization),
           },
         ),
       ),
@@ -483,11 +458,7 @@ class DiscordService {
           `${this.DISCORD_CHANNELS_ENDPOINT}/${channelId}/threads/archived/public`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              authorization: authorization,
-              "user-agent": this.userAgent,
-            },
+            headers: this.buildHeaders(authorization),
           },
         ),
       ),
@@ -497,11 +468,7 @@ class DiscordService {
     this.withRetry<unknown>(() =>
       fetch(`${this.DISCORD_USERS_ENDPOINT}/@me/channels`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: authorization,
-          "user-agent": this.userAgent,
-        },
+        headers: this.buildHeaders(authorization),
         body: JSON.stringify({ recipient_id }),
       }),
     );
@@ -513,11 +480,7 @@ class DiscordService {
     this.withRetry<unknown>(() =>
       fetch(`${this.DISCORD_USERS_ENDPOINT}/@me/relationships`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: authorization,
-          "user-agent": this.userAgent,
-        },
+        headers: this.buildHeaders(authorization),
         body: JSON.stringify(props),
       }),
     );
@@ -526,11 +489,7 @@ class DiscordService {
     this.withRetry<unknown>(() =>
       fetch(`${this.DISCORD_USERS_ENDPOINT}/@me/relationships/${userId}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: authorization,
-          "user-agent": this.userAgent,
-        },
+        headers: this.buildHeaders(authorization),
       }),
     );
 
@@ -538,11 +497,7 @@ class DiscordService {
     this.withRetry<unknown[]>(() =>
       fetch(`${this.DISCORD_USERS_ENDPOINT}/@me/relationships`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: authorization,
-          "user-agent": this.userAgent,
-        },
+        headers: this.buildHeaders(authorization),
       }),
     );
 
@@ -569,11 +524,7 @@ class DiscordService {
           }`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              authorization: authorization,
-              "user-agent": this.userAgent,
-            },
+            headers: this.buildHeaders(authorization),
           },
         ),
       ),
@@ -592,11 +543,7 @@ class DiscordService {
           `${this.DISCORD_CHANNELS_ENDPOINT}/${channelId}/messages/${messageId}/reactions/${emoji}/${userId}`,
           {
             method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              authorization: authorization,
-              "user-agent": this.userAgent,
-            },
+            headers: this.buildHeaders(authorization),
           },
         ),
       ),

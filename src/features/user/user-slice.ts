@@ -11,10 +11,12 @@ import {
   getGMOMappingData,
   getUserMappingData,
 } from "../../utils.ts";
+import { DiscordClientHeaders } from "../../types/discord-client-headers.ts";
 
 const initialState: UserState = {
   currentUser: null,
   token: null,
+  clientHeaders: {},
   isLoading: null,
 };
 
@@ -31,18 +33,38 @@ export const userSlice = createSlice({
     setCurrentUser: (state, { payload }: { payload: User }): void => {
       state.currentUser = payload;
     },
+    setClientHeaders: (
+      state,
+      { payload }: { payload: DiscordClientHeaders },
+    ): void => {
+      state.clientHeaders = payload;
+    },
   },
 });
 
-export const { setIsLoading, setToken, setCurrentUser } = userSlice.actions;
+export const { setIsLoading, setToken, setCurrentUser, setClientHeaders } =
+  userSlice.actions;
 
 export const getUserData = (): AppThunk => async (dispatch, getState) => {
   const { settings } = getState().app;
   dispatch(setIsLoading(true));
+
+  // First, capture Discord's client headers from the page
+  sendChromeMessage(
+    "GET_CLIENT_HEADERS",
+    (headers: DiscordClientHeaders | null) => {
+      if (headers) {
+        dispatch(setClientHeaders(headers));
+      }
+    },
+  );
+
   const chromeCallback = async (userToken: string) => {
     if (userToken) {
+      const { clientHeaders } = getState().user;
       const { success, data } = await new DiscordService(
         settings,
+        clientHeaders,
       ).fetchUserData(userToken);
       if (success && data) {
         dispatch(setCurrentUser(data));
@@ -58,9 +80,11 @@ export const getUserDataManaully =
   (userToken: string): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     const { settings } = getState().app;
+    const { clientHeaders } = getState().user;
     if (userToken) {
       const { data, success } = await new DiscordService(
         settings,
+        clientHeaders,
       ).fetchUserData(userToken);
 
       if (success && data) {
@@ -95,7 +119,7 @@ export const clearUserMapping =
 export const createUserMapping =
   (userId: string, guildId: string): AppThunk =>
   async (dispatch, getState) => {
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     if (!token) return;
 
     const { userMap } = getState().export.exportMaps;
@@ -103,10 +127,10 @@ export const createUserMapping =
 
     // Lookup User and create mapping if one does not exist
     if (!newUserMap[userId]) {
-      const { success, data } = await new DiscordService().getUser(
-        token,
-        userId,
-      );
+      const { success, data } = await new DiscordService(
+        undefined,
+        clientHeaders,
+      ).getUser(token, userId);
       if (success && data) {
         newUserMap[userId] = { ...getUserMappingData(data), guilds: {} };
       }
@@ -114,11 +138,10 @@ export const createUserMapping =
 
     // Lookup Guild Data and update mapping if User mapping exists but Guild data does not
     if (newUserMap[userId] && !newUserMap[userId].guilds[guildId]) {
-      const { success, data } = await new DiscordService().fetchGuildUser(
-        guildId,
-        userId,
-        token,
-      );
+      const { success, data } = await new DiscordService(
+        undefined,
+        clientHeaders,
+      ).fetchGuildUser(guildId, userId, token);
       if (success && data) {
         newUserMap[userId].guilds[guildId] = { ...getGMOMappingData(data) };
       } else {
