@@ -59,10 +59,10 @@ export const getRoles =
   async (dispatch, getState) => {
     const { settings } = getState().app;
     const { guilds } = getState().guild;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     const guild = guilds.find((g) => g.id === guildId);
     if (guild && !guild.roles && token) {
-      const { data, success } = await new DiscordService(settings).fetchRoles(
+      const { data, success } = await new DiscordService(settings, clientHeaders).fetchRoles(
         guildId,
         token,
       );
@@ -83,10 +83,10 @@ export const getRoles =
 
 export const getGuilds = (): AppThunk => async (dispatch, getState) => {
   const { settings } = getState().app;
-  const { token } = getState().user;
+  const { token, clientHeaders } = getState().user;
   if (token) {
     dispatch(setIsLoading(true));
-    const { success, data } = await new DiscordService(settings).fetchGuilds(
+    const { success, data } = await new DiscordService(settings, clientHeaders).fetchGuilds(
       token,
     );
     if (success && data) {

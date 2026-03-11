@@ -39,7 +39,7 @@ function DiscrubDialog() {
   const showKoFiFeed = stringToBool(settings.appShowKoFiFeed);
   const currentRevision = settings.cachedAnnouncementRev;
 
-  const { getUserData } = useUserSlice();
+  const { getUserData, refreshClientHeaders } = useUserSlice();
 
   const handleChangeMenuIndex = async (index: number) => {
     resetAdvancedFilters();
@@ -61,6 +61,12 @@ function DiscrubDialog() {
     };
     getUserData();
     init();
+
+    // Periodically re-fetch Discord client headers from the content script
+    // so that long-running operations always use a fresh X-Super-Properties
+    // build number instead of the stale snapshot captured at startup.
+    const headerRefreshInterval = setInterval(refreshClientHeaders, 120_000);
+    return () => clearInterval(headerRefreshInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

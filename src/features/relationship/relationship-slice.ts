@@ -25,11 +25,11 @@ export const { setIsLoading, setFriends } = relationshipSlice.actions;
 
 export const getFriends = (): AppThunk => async (dispatch, getState) => {
   const { settings } = getState().app;
-  const { token } = getState().user;
+  const { token, clientHeaders } = getState().user;
   if (token) {
     dispatch(setIsLoading(true));
     const { success, data } = await new DiscordService(
-      settings
+      settings, clientHeaders
     ).getRelationships(token);
     if (success && data) {
       dispatch(setFriends(data));
@@ -44,10 +44,10 @@ export const addFriend =
   ({ username, discriminator }: AddFriendProps): AppThunk =>
   async (dispatch, getState) => {
     const { settings } = getState().app;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     if (token) {
       dispatch(setIsLoading(true));
-      await new DiscordService(settings).sendFriendRequest(token, {
+      await new DiscordService(settings, clientHeaders).sendFriendRequest(token, {
         username,
         discriminator,
       });
@@ -59,13 +59,13 @@ export const deleteFriend =
   (userId: Snowflake): AppThunk =>
   async (dispatch, getState) => {
     const { settings } = getState().app;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     //   const { friends } = getState().relationship;
 
     if (token) {
       dispatch(setIsLoading(true));
       const { success } = await new DiscordService(
-        settings
+        settings, clientHeaders
       ).deleteFriendRequest(token, userId);
       if (success) {
         //   dispatch(setFriends(friends.filter((f) => f.user.id !== userId)));
@@ -78,10 +78,10 @@ export const openDm =
   (userId: Snowflake): AppThunk =>
   async (dispatch, getState) => {
     const { settings } = getState().app;
-    const { token } = getState().user;
+    const { token, clientHeaders } = getState().user;
     if (token) {
       dispatch(setIsLoading(true));
-      await new DiscordService(settings).createDm(token, userId); // TODO: Possibly return a response so User knows if DM was opened successfully.
+      await new DiscordService(settings, clientHeaders).createDm(token, userId); // TODO: Possibly return a response so User knows if DM was opened successfully.
       dispatch(setIsLoading(false));
     }
   };

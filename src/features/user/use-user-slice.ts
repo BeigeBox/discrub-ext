@@ -7,6 +7,7 @@ import {
   getUserDataManaully as getUserDataManaullyAction,
   clearUserMapping as clearUserMappingAction,
   createUserMapping as createUserMappingAction,
+  refreshClientHeaders as refreshClientHeadersAction,
 } from "./user-slice";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { User } from "../../classes/user";
@@ -57,6 +58,10 @@ const useUserSlice = () => {
     dispatch(createUserMappingAction(userId, guildId));
   };
 
+  const refreshClientHeaders = () => {
+    dispatch(refreshClientHeadersAction());
+  };
+
   return {
     state,
     setIsLoading,
@@ -66,6 +71,7 @@ const useUserSlice = () => {
     getUserDataManaully,
     clearUserMapping,
     createUserMapping,
+    refreshClientHeaders,
   };
 };
 
